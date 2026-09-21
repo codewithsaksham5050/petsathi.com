@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Login — petsath.com</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="login">
+
+<header class="site-header" id="site-header"></header>
+
+<div class="container auth-wrap">
+  <div class="card">
+    <h2 class="text-center">Welcome Back</h2>
+    <p class="text-center" style="color:var(--muted);margin-bottom:24px;">Login to petsath.com</p>
+    <div id="alertBox"></div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" required />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" required />
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;">Login</button>
+    </form>
+    <p class="auth-switch">Don't have an account? <a href="register.html">Register here</a></p>
+  </div>
+</div>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script>
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const alertBox = document.getElementById("alertBox");
+  alertBox.innerHTML = "";
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  try {
+    const data = await api.apiFetch("/auth/login", { method: "POST", body: { email, password } });
+    api.setSession(data.token, data.user);
+    window.location.href = data.user.role === "admin" ? "admin.html" : "profile.html";
+  } catch (err) {
+    showAlert(alertBox, err.message, "error");
+  }
+});
+</script>
+</body>
+</html>

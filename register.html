@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Register — petsath.com</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="register">
+
+<header class="site-header" id="site-header"></header>
+
+<div class="container auth-wrap">
+  <div class="card">
+    <h2 class="text-center">Create Your Account</h2>
+    <p class="text-center" style="color:var(--muted);margin-bottom:24px;">Join petsath.com as an adopter or a pet owner</p>
+    <div id="alertBox"></div>
+    <form id="registerForm">
+      <div class="form-group">
+        <label>I want to register as</label>
+        <div class="radio-group">
+          <label><input type="radio" name="role" value="adopter" checked /> Pet Adopter</label>
+          <label><input type="radio" name="role" value="owner" /> Pet Owner (give a pet for adoption)</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="name" required />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" required />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" id="phone" placeholder="Optional" />
+        </div>
+        <div class="form-group">
+          <label>Address / City</label>
+          <input type="text" id="address" placeholder="Optional" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" minlength="6" required />
+        <div class="hint">At least 6 characters.</div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;">Create Account</button>
+    </form>
+    <p class="auth-switch">Already have an account? <a href="login.html">Login here</a></p>
+  </div>
+</div>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script>
+document.getElementById("registerForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const alertBox = document.getElementById("alertBox");
+  alertBox.innerHTML = "";
+  const role = document.querySelector('input[name="role"]:checked').value;
+  const body = {
+    role,
+    name: document.getElementById("name").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    phone: document.getElementById("phone").value.trim(),
+    address: document.getElementById("address").value.trim(),
+    password: document.getElementById("password").value,
+  };
+  try {
+    const data = await api.apiFetch("/auth/register", { method: "POST", body });
+    api.setSession(data.token, data.user);
+    window.location.href = "profile.html";
+  } catch (err) {
+    showAlert(alertBox, err.message, "error");
+  }
+});
+</script>
+</body>
+</html>

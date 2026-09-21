@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Profile — petsath.com</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="profile">
+
+<header class="site-header" id="site-header"></header>
+
+<section style="padding-top:40px;">
+  <div class="container">
+    <div class="card">
+      <div class="profile-header">
+        <img class="avatar" id="avatarImg" src="" alt="avatar" />
+        <div>
+          <h2 id="profileName" style="margin:0;">Loading...</h2>
+          <div style="color:var(--muted);" id="profileMeta"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs" id="tabsWrap">
+      <button class="tab-btn active" data-tab="info">Profile Info</button>
+      <button class="tab-btn" data-tab="mypets" id="myPetsTabBtn" style="display:none;">My Pets</button>
+      <button class="tab-btn" data-tab="liked">Liked Pets</button>
+      <button class="tab-btn" data-tab="adoptions" id="adoptionsTabBtn" style="display:none;">Adoption Requests</button>
+      <button class="tab-btn" data-tab="inbox">Messages</button>
+    </div>
+
+    <!-- PROFILE INFO -->
+    <div class="tab-panel active" id="tab-info">
+      <div class="card">
+        <div id="infoAlert"></div>
+        <form id="profileForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" id="pName" required />
+            </div>
+            <div class="form-group">
+              <label>Phone</label>
+              <input type="text" id="pPhone" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Address</label>
+            <input type="text" id="pAddress" />
+          </div>
+          <div class="form-group">
+            <label>About Me</label>
+            <textarea id="pBio" placeholder="Tell others a little about yourself..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Profile Photo</label>
+            <input type="file" id="pAvatar" accept="image/*" />
+          </div>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MY PETS (owners only) -->
+    <div class="tab-panel" id="tab-mypets">
+      <div class="card mb-20">
+        <h3>Add a New Pet</h3>
+        <p class="hint mb-20">Upload at least 3 photos so adopters can see your pet clearly.</p>
+        <div id="petAlert"></div>
+        <form id="addPetForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Pet Name</label>
+              <input type="text" id="petName" required />
+            </div>
+            <div class="form-group">
+              <label>Species</label>
+              <select id="petSpecies" required>
+                <option value="Dog">Dog</option>
+                <option value="Cat">Cat</option>
+                <option value="Bird">Bird</option>
+                <option value="Rabbit">Rabbit</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Breed</label>
+              <input type="text" id="petBreed" />
+            </div>
+            <div class="form-group">
+              <label>Age (years)</label>
+              <input type="number" id="petAge" min="0" step="0.5" />
+            </div>
+            <div class="form-group">
+              <label>Gender</label>
+              <select id="petGender">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="petDescription" placeholder="Temperament, vaccination status, why they need a new home..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Photos (minimum 3)</label>
+            <input type="file" id="petImages" accept="image/*" multiple required />
+            <div class="preview-thumbs" id="petImagePreview"></div>
+          </div>
+          <button type="submit" class="btn btn-primary">List This Pet</button>
+        </form>
+      </div>
+
+      <h3>My Listed Pets</h3>
+      <div class="pet-grid" id="myPetsGrid"><p class="empty-state">Loading...</p></div>
+    </div>
+
+    <!-- LIKED PETS -->
+    <div class="tab-panel" id="tab-liked">
+      <div class="pet-grid" id="likedPetsGrid"><p class="empty-state">Loading...</p></div>
+    </div>
+
+    <!-- ADOPTION REQUESTS (for owners: requests received; handled by admin for approval) -->
+    <div class="tab-panel" id="tab-adoptions">
+      <div class="card">
+        <p class="hint">Adoption requests for your pets are reviewed and approved by the petsath.com admin team. Here you can see their current status.</p>
+        <table class="data-table" id="adoptionsTable">
+          <thead><tr><th>Pet</th><th>Adopter</th><th>Status</th><th>Requested</th></tr></thead>
+          <tbody><tr><td colspan="4">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- INBOX / CHAT -->
+    <div class="tab-panel" id="tab-inbox">
+      <div class="card" style="display:flex;gap:24px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:220px;">
+          <h4>Conversations</h4>
+          <ul class="inbox-list" id="inboxList"><p class="empty-state">Loading...</p></ul>
+        </div>
+        <div style="flex:2;min-width:280px;">
+          <h4 id="chatWithLabel">Select a conversation</h4>
+          <div class="chat-box">
+            <div class="chat-messages" id="inboxMessages"></div>
+            <form class="chat-input" id="inboxChatForm" style="display:none;">
+              <input type="text" id="inboxChatText" placeholder="Type a message..." autocomplete="off" required />
+              <button type="submit">Send</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script>
+if (!requireLogin()) { /* redirected */ }
+let me = null;
+
+async function init() {
+  try {
+    me = await api.apiFetch("/users/me");
+    api.setSession(api.getToken(), me);
+    renderLayout();
+    renderProfileHeader();
+    fillProfileForm();
+    if (me.role === "owner" || me.role === "admin") {
+      document.getElementById("myPetsTabBtn").style.display = "inline-block";
+      document.getElementById("adoptionsTabBtn").style.display = "inline-block";
+      loadMyPets();
+      loadAdoptionsForOwner();
+    }
+    loadLikedPets();
+    loadInbox();
+  } catch (err) {
+    api.clearSession();
+    window.location.href = "login.html";
+  }
+}
+
+function renderProfileHeader() {
+  document.getElementById("avatarImg").src = me.profileImage ? api.fileUrl(me.profileImage) : PLACEHOLDER_IMG;
+  document.getElementById("profileName").textContent = me.name;
+  document.getElementById("profileMeta").textContent = `${me.role === "owner" ? "Pet Owner" : me.role === "admin" ? "Administrator" : "Pet Adopter"} • ${me.email}`;
+}
+
+function fillProfileForm() {
+  document.getElementById("pName").value = me.name || "";
+  document.getElementById("pPhone").value = me.phone || "";
+  document.getElementById("pAddress").value = me.address || "";
+  document.getElementById("pBio").value = me.bio || "";
+}
+
+// ---- Tabs ----
+document.querySelectorAll(".tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+  });
+});
+
+// ---- Profile form ----
+document.getElementById("profileForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const alertBox = document.getElementById("infoAlert");
+  alertBox.innerHTML = "";
+  const fd = new FormData();
+  fd.append("name", document.getElementById("pName").value.trim());
+  fd.append("phone", document.getElementById("pPhone").value.trim());
+  fd.append("address", document.getElementById("pAddress").value.trim());
+  fd.append("bio", document.getElementById("pBio").value.trim());
+  const fileInput = document.getElementById("pAvatar");
+  if (fileInput.files[0]) fd.append("profileImage", fileInput.files[0]);
+
+  try {
+    me = await api.apiFetch("/users/me", { method: "PUT", body: fd });
+    api.setSession(api.getToken(), me);
+    renderProfileHeader();
+    showAlert(alertBox, "Profile updated!", "success");
+  } catch (err) {
+    showAlert(alertBox, err.message, "error");
+  }
+});
+
+// ---- Add Pet ----
+document.getElementById("petImages").addEventListener("change", (e) => {
+  const preview = document.getElementById("petImagePreview");
+  preview.innerHTML = "";
+  Array.from(e.target.files).forEach((file) => {
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(file);
+    preview.appendChild(img);
+  });
+});
+
+document.getElementById("addPetForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const alertBox = document.getElementById("petAlert");
+  alertBox.innerHTML = "";
+  const files = document.getElementById("petImages").files;
+  if (files.length < 3) {
+    showAlert(alertBox, "Please upload at least 3 photos of the pet.", "error");
+    return;
+  }
+  const fd = new FormData();
+  fd.append("name", document.getElementById("petName").value.trim());
+  fd.append("species", document.getElementById("petSpecies").value);
+  fd.append("breed", document.getElementById("petBreed").value.trim());
+  fd.append("age", document.getElementById("petAge").value);
+  fd.append("gender", document.getElementById("petGender").value);
+  fd.append("description", document.getElementById("petDescription").value.trim());
+  Array.from(files).forEach((f) => fd.append("images", f));
+
+  try {
+    await api.apiFetch("/pets", { method: "POST", body: fd });
+    showAlert(alertBox, "Pet listed successfully!", "success");
+    document.getElementById("addPetForm").reset();
+    document.getElementById("petImagePreview").innerHTML = "";
+    loadMyPets();
+  } catch (err) {
+    showAlert(alertBox, err.message, "error");
+  }
+});
+
+async function loadMyPets() {
+  const grid = document.getElementById("myPetsGrid");
+  try {
+    const pets = await api.apiFetch("/pets/mine/list");
+    if (!pets.length) {
+      grid.innerHTML = `<p class="empty-state">You haven't listed any pets yet.</p>`;
+      return;
+    }
+    grid.innerHTML = pets.map(myPetCardHtml).join("");
+    grid.querySelectorAll(".delete-pet-btn").forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        if (!confirm("Delete this pet listing?")) return;
+        await api.apiFetch("/pets/" + btn.dataset.id, { method: "DELETE" });
+        loadMyPets();
+      })
+    );
+  } catch (err) {
+    grid.innerHTML = `<p class="empty-state">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function myPetCardHtml(p) {
+  const img = p.images && p.images.length ? api.fileUrl(p.images[0]) : PLACEHOLDER_IMG;
+  return `
+    <div class="pet-card">
+      <div class="pet-img"><span class="pet-status">${escapeHtml(p.status)}</span><img src="${img}" /></div>
+      <div class="pet-body">
+        <h3>${escapeHtml(p.name)}</h3>
+        <div class="pet-meta">❤️ ${p.likeCount} likes</div>
+        <div class="pet-footer">
+          <a href="pet-details.html?id=${p.id}" class="btn btn-outline btn-small">View</a>
+          <button class="btn btn-danger btn-small delete-pet-btn" data-id="${p.id}">Delete</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function loadLikedPets() {
+  const grid = document.getElementById("likedPetsGrid");
+  try {
+    const likedIds = await api.apiFetch("/likes/mine/list");
+    if (!likedIds.length) {
+      grid.innerHTML = `<p class="empty-state">You haven't liked any pets yet. <a href="gallery.html">Browse the gallery</a>.</p>`;
+      return;
+    }
+    const allPets = await api.apiFetch("/pets");
+    const liked = allPets.filter((p) => likedIds.includes(Number(p.id)));
+    grid.innerHTML = liked
+      .map((p) => {
+        const img = p.images && p.images.length ? api.fileUrl(p.images[0]) : PLACEHOLDER_IMG;
+        return `
+        <a href="pet-details.html?id=${p.id}" class="pet-card" style="text-decoration:none;">
+          <div class="pet-img"><span class="pet-status">${escapeHtml(p.status)}</span><img src="${img}" /></div>
+          <div class="pet-body"><h3>${escapeHtml(p.name)}</h3><div class="pet-meta">${escapeHtml(p.species)} • ${escapeHtml(p.breed || "Mixed")}</div></div>
+        </a>`;
+      })
+      .join("");
+  } catch (err) {
+    grid.innerHTML = `<p class="empty-state">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+async function loadAdoptionsForOwner() {
+  const tbody = document.querySelector("#adoptionsTable tbody");
+  try {
+    const mine = await api.apiFetch("/pets/mine/list");
+    const myPetIds = mine.map((p) => Number(p.id));
+    // there's no direct "adoptions for my pets" endpoint for owners, so admin endpoint is used only by admins.
+    // Owners see status via each pet card instead; keep this table informative but simple.
+    if (!myPetIds.length) {
+      tbody.innerHTML = `<tr><td colspan="4">List a pet to start receiving adoption requests.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = `<tr><td colspan="4">Check each pet's status badge in "My Pets" — statuses update automatically once the admin reviews a request.</td></tr>`;
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="4">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+// ---- Inbox / chat ----
+let activeConversation = null;
+let inboxPollTimer = null;
+
+async function loadInbox() {
+  const list = document.getElementById("inboxList");
+  try {
+    const conversations = await api.apiFetch("/chat/inbox");
+    if (!conversations.length) {
+      list.innerHTML = `<p class="empty-state">No conversations yet.</p>`;
+      return;
+    }
+    list.innerHTML = conversations
+      .map(
+        (c) => `
+        <li data-pet="${c.petId}" data-user="${c.otherUserId}" data-name="${escapeHtml(c.otherUserName)}">
+          <div class="name">${escapeHtml(c.otherUserName)} — ${escapeHtml(c.petName)}</div>
+          <div class="preview">${escapeHtml((c.lastMessage || "").slice(0, 40))}</div>
+        </li>`
+      )
+      .join("");
+    list.querySelectorAll("li").forEach((li) =>
+      li.addEventListener("click", () => {
+        list.querySelectorAll("li").forEach((l) => l.classList.remove("active"));
+        li.classList.add("active");
+        openConversation(li.dataset.pet, li.dataset.user, li.dataset.name);
+      })
+    );
+  } catch (err) {
+    list.innerHTML = `<p class="empty-state">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function openConversation(petId, userId, userName) {
+  activeConversation = { petId, userId };
+  document.getElementById("chatWithLabel").textContent = "Chat with " + userName;
+  document.getElementById("inboxChatForm").style.display = "flex";
+  loadInboxMessages();
+  if (inboxPollTimer) clearInterval(inboxPollTimer);
+  inboxPollTimer = setInterval(loadInboxMessages, 4000);
+}
+
+async function loadInboxMessages() {
+  if (!activeConversation) return;
+  const box = document.getElementById("inboxMessages");
+  try {
+    const msgs = await api.apiFetch(
+      `/chat/conversation?petId=${activeConversation.petId}&withUserId=${activeConversation.userId}`
+    );
+    box.innerHTML = msgs
+      .map((m) => `<div class="msg ${Number(m.senderId) === Number(me.id) ? "me" : "them"}">${escapeHtml(m.message)}</div>`)
+      .join("");
+    box.scrollTop = box.scrollHeight;
+  } catch (err) {
+    box.innerHTML = `<p style="font-size:13px;color:var(--muted);">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+document.getElementById("inboxChatForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!activeConversation) return;
+  const input = document.getElementById("inboxChatText");
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  try {
+    await api.apiFetch("/chat/send", {
+      method: "POST",
+      body: { petId: activeConversation.petId, receiverId: activeConversation.userId, message: text },
+    });
+    loadInboxMessages();
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+init();
+</script>
+</body>
+</html>

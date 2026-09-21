@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin Panel — petsath.com</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="admin">
+
+<header class="site-header" id="site-header"></header>
+
+<section style="padding-top:40px;">
+  <div class="container">
+    <div class="section-title" style="text-align:left;margin-bottom:20px;">
+      <h2>Admin Panel</h2>
+      <p>Manage users, pet listings, and adoption requests for petsath.com</p>
+    </div>
+
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="adoptions">Adoption Requests</button>
+      <button class="tab-btn" data-tab="pets">All Pets</button>
+      <button class="tab-btn" data-tab="users">All Users</button>
+      <button class="tab-btn" data-tab="contacts">Contact Messages</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-adoptions">
+      <table class="data-table">
+        <thead><tr><th>Pet</th><th>Adopter</th><th>Pet Owner</th><th>Status</th><th>Requested</th><th>Action</th></tr></thead>
+        <tbody id="adoptionsBody"><tr><td colspan="6">Loading...</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="tab-panel" id="tab-pets">
+      <table class="data-table">
+        <thead><tr><th>ID</th><th>Name</th><th>Species</th><th>Owner</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="petsBody"><tr><td colspan="6">Loading...</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="tab-panel" id="tab-users">
+      <table class="data-table">
+        <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Phone</th><th>Action</th></tr></thead>
+        <tbody id="usersBody"><tr><td colspan="6">Loading...</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="tab-panel" id="tab-contacts">
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Email</th><th>Message</th><th>Sent</th></tr></thead>
+        <tbody id="contactsBody"><tr><td colspan="4">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script>
+if (!requireLogin()) { /* redirected */ }
+const user = api.getUser();
+if (!user || user.role !== "admin") {
+  window.location.href = "index.html";
+}
+
+document.querySelectorAll(".tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+  });
+});
+
+async function loadStats() {
+  const grid = document.getElementById("statsGrid");
+  try {
+    const s = await api.apiFetch("/admin/stats");
+    grid.innerHTML = `
+      <div class="stat-card"><div class="num">${s.totalUsers}</div><div class="label">Total Users</div></div>
+      <div class="stat-card"><div class="num">${s.totalAdopters}</div><div class="label">Adopters</div></div>
+      <div class="stat-card"><div class="num">${s.totalOwners}</div><div class="label">Pet Owners</div></div>
+      <div class="stat-card"><div class="num">${s.totalPets}</div><div class="label">Total Pets</div></div>
+      <div class="stat-card"><div class="num">${s.availablePets}</div><div class="label">Available</div></div>
+      <div class="stat-card"><div class="num">${s.adoptedPets}</div><div class="label">Adopted</div></div>
+      <div class="stat-card"><div class="num">${s.pendingAdoptions}</div><div class="label">Pending Requests</div></div>
+    `;
+  } catch (err) {
+    grid.innerHTML = `<p class="empty-state">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+async function loadAdoptions() {
+  const body = document.getElementById("adoptionsBody");
+  try {
+    const list = await api.apiFetch("/admin/adoptions");
+    if (!list.length) {
+      body.innerHTML = `<tr><td colspan="6">No adoption requests yet.</td></tr>`;
+      return;
+    }
+    body.innerHTML = list
+      .map(
+        (a) => `
+        <tr>
+          <td>${escapeHtml(a.petName)}</td>
+          <td>${escapeHtml(a.adopterName)}</td>
+          <td>${escapeHtml(a.ownerName)}</td>
+          <td><span class="badge badge-${a.status}">${escapeHtml(a.status)}</span></td>
+          <td>${timeAgo(a.createdAt)}</td>
+          <td>
+            ${
+              a.status === "pending"
+                ? `<button class="btn btn-primary btn-small approve-btn" data-id="${a.id}">Approve</button>
+                   <button class="btn btn-danger btn-small reject-btn" data-id="${a.id}">Reject</button>`
+                : "—"
+            }
+          </td>
+        </tr>`
+      )
+      .join("");
+    body.querySelectorAll(".approve-btn").forEach((b) =>
+      b.addEventListener("click", () => updateAdoption(b.dataset.id, "approved"))
+    );
+    body.querySelectorAll(".reject-btn").forEach((b) =>
+      b.addEventListener("click", () => updateAdoption(b.dataset.id, "rejected"))
+    );
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="6">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+async function updateAdoption(id, status) {
+  try {
+    await api.apiFetch("/admin/adoptions/" + id, { method: "PUT", body: { status } });
+    loadAdoptions();
+    loadPets();
+    loadStats();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function loadPets() {
+  const body = document.getElementById("petsBody");
+  try {
+    const pets = await api.apiFetch("/admin/pets");
+    if (!pets.length) {
+      body.innerHTML = `<tr><td colspan="6">No pets listed yet.</td></tr>`;
+      return;
+    }
+    body.innerHTML = pets
+      .map(
+        (p) => `
+        <tr>
+          <td>${p.id}</td>
+          <td>${escapeHtml(p.name)}</td>
+          <td>${escapeHtml(p.species)}</td>
+          <td>${escapeHtml(p.ownerName)}</td>
+          <td><span class="badge badge-${p.status}">${escapeHtml(p.status)}</span></td>
+          <td><button class="btn btn-danger btn-small del-pet-btn" data-id="${p.id}">Delete</button></td>
+        </tr>`
+      )
+      .join("");
+    body.querySelectorAll(".del-pet-btn").forEach((b) =>
+      b.addEventListener("click", async () => {
+        if (!confirm("Delete this pet listing?")) return;
+        await api.apiFetch("/admin/pets/" + b.dataset.id, { method: "DELETE" });
+        loadPets();
+        loadStats();
+      })
+    );
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="6">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+async function loadUsers() {
+  const body = document.getElementById("usersBody");
+  try {
+    const users = await api.apiFetch("/admin/users");
+    body.innerHTML = users
+      .map(
+        (u) => `
+        <tr>
+          <td>${u.id}</td>
+          <td>${escapeHtml(u.name)}</td>
+          <td>${escapeHtml(u.email)}</td>
+          <td><span class="badge">${escapeHtml(u.role)}</span></td>
+          <td>${escapeHtml(u.phone || "-")}</td>
+          <td>${
+            u.role === "admin"
+              ? "—"
+              : `<button class="btn btn-danger btn-small del-user-btn" data-id="${u.id}">Delete</button>`
+          }</td>
+        </tr>`
+      )
+      .join("");
+    body.querySelectorAll(".del-user-btn").forEach((b) =>
+      b.addEventListener("click", async () => {
+        if (!confirm("Delete this user account?")) return;
+        await api.apiFetch("/admin/users/" + b.dataset.id, { method: "DELETE" });
+        loadUsers();
+        loadStats();
+      })
+    );
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="6">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+async function loadContacts() {
+  const body = document.getElementById("contactsBody");
+  try {
+    const list = await api.apiFetch("/admin/contacts");
+    if (!list.length) {
+      body.innerHTML = `<tr><td colspan="4">No messages yet.</td></tr>`;
+      return;
+    }
+    body.innerHTML = list
+      .map(
+        (c) => `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.email)}</td><td>${escapeHtml(c.message)}</td><td>${timeAgo(c.createdAt)}</td></tr>`
+      )
+      .join("");
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="4">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+loadStats();
+loadAdoptions();
+loadPets();
+loadUsers();
+loadContacts();
+</script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pet Details — petsath.com</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="gallery">
+
+<header class="site-header" id="site-header"></header>
+
+<section style="padding-top:40px;">
+  <div class="container" id="petDetailWrap">
+    <p class="empty-state">Loading pet details...</p>
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const petId = params.get("id");
+let currentPet = null;
+
+async function loadPet() {
+  const wrap = document.getElementById("petDetailWrap");
+  if (!petId) {
+    wrap.innerHTML = `<p class="empty-state">No pet specified.</p>`;
+    return;
+  }
+  try {
+    const pet = await api.apiFetch("/pets/" + petId);
+    currentPet = pet;
+    renderPet(pet);
+  } catch (err) {
+    wrap.innerHTML = `<p class="empty-state">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function renderPet(p) {
+  const wrap = document.getElementById("petDetailWrap");
+  const images = p.images && p.images.length ? p.images.map(api.fileUrl) : [PLACEHOLDER_IMG];
+  const user = api.getUser();
+  const isOwner = user && Number(user.id) === Number(p.ownerId);
+  const badgeClass = "badge-" + p.status;
+
+  wrap.innerHTML = `
+    <div class="pet-detail-grid">
+      <div>
+        <div class="gallery-main"><img id="mainImg" src="${images[0]}" alt="${escapeHtml(p.name)}"/></div>
+        <div class="gallery-thumbs">
+          ${images.map((img, i) => `<img src="${img}" class="${i === 0 ? "active" : ""}" data-src="${img}" />`).join("")}
+        </div>
+      </div>
+      <div>
+        <span class="badge ${badgeClass}">${escapeHtml(p.status)}</span>
+        <h1 style="margin:10px 0 4px;">${escapeHtml(p.name)}</h1>
+        <div class="pet-meta" style="font-size:15px;">${escapeHtml(p.species)} • ${escapeHtml(p.breed || "Mixed")} • ${escapeHtml(String(p.age || "?"))} yrs • ${escapeHtml(p.gender || "Unknown")}</div>
+
+        <p style="margin:18px 0;color:#444;">${escapeHtml(p.description || "No description provided.")}</p>
+
+        <div class="owner-box">
+          <img class="avatar" style="width:52px;height:52px;" src="${PLACEHOLDER_IMG}" />
+          <div>
+            <div style="font-weight:700;">${escapeHtml(p.ownerName)}</div>
+            <div style="font-size:13px;color:var(--muted);">Listed ${timeAgo(p.createdAt)}</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <button class="btn ${p.likedByMe ? "btn-danger" : "btn-outline"}" id="likeBtn">
+            ${p.likedByMe ? "❤️ Liked" : "🤍 Like this pet"} (<span id="likeCount">${p.likeCount}</span>)
+          </button>
+          ${
+            !isOwner
+              ? `<button class="btn btn-secondary" id="chatBtn">💬 Chat with Owner</button>
+                 <button class="btn btn-primary" id="adoptBtn" ${p.status !== "available" ? "disabled" : ""}>🏠 Request Adoption</button>`
+              : `<a href="profile.html" class="btn btn-outline">Manage in Profile</a>`
+          }
+        </div>
+
+        <div id="chatSection" style="margin-top:26px;display:none;">
+          <h3>Chat with ${escapeHtml(p.ownerName)}</h3>
+          <div class="chat-box">
+            <div class="chat-messages" id="chatMessages"></div>
+            <form class="chat-input" id="chatForm">
+              <input type="text" id="chatText" placeholder="Type a message..." autocomplete="off" required />
+              <button type="submit">Send</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  wrap.querySelectorAll(".gallery-thumbs img").forEach((thumb) => {
+    thumb.addEventListener("click", () => {
+      document.getElementById("mainImg").src = thumb.getAttribute("data-src");
+      wrap.querySelectorAll(".gallery-thumbs img").forEach((t) => t.classList.remove("active"));
+      thumb.classList.add("active");
+    });
+  });
+
+  document.getElementById("likeBtn").addEventListener("click", toggleLike);
+  const chatBtn = document.getElementById("chatBtn");
+  if (chatBtn) chatBtn.addEventListener("click", openChat);
+  const adoptBtn = document.getElementById("adoptBtn");
+  if (adoptBtn) adoptBtn.addEventListener("click", requestAdoption);
+}
+
+async function toggleLike() {
+  if (!api.getToken()) return (window.location.href = "login.html");
+  try {
+    const result = await api.apiFetch("/likes/" + petId, { method: "POST" });
+    const btn = document.getElementById("likeBtn");
+    const countEl = document.getElementById("likeCount");
+    let count = parseInt(countEl.textContent, 10);
+    if (result.liked) {
+      count += 1;
+      btn.classList.remove("btn-outline");
+      btn.classList.add("btn-danger");
+      btn.innerHTML = `❤️ Liked (<span id="likeCount">${count}</span>)`;
+    } else {
+      count -= 1;
+      btn.classList.remove("btn-danger");
+      btn.classList.add("btn-outline");
+      btn.innerHTML = `🤍 Like this pet (<span id="likeCount">${count}</span>)`;
+    }
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function requestAdoption() {
+  if (!api.getToken()) return (window.location.href = "login.html");
+  const user = api.getUser();
+  if (user.role !== "adopter" && user.role !== "admin") {
+    alert("Only accounts registered as 'Adopter' can request adoption. Update your role by registering a new adopter account.");
+    return;
+  }
+  try {
+    await api.apiFetch(`/pets/${petId}/adopt`, { method: "POST" });
+    alert("Adoption request sent! The admin and owner will review it.");
+    loadPet();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+let chatPollTimer = null;
+function openChat() {
+  const section = document.getElementById("chatSection");
+  section.style.display = section.style.display === "none" ? "block" : "none";
+  if (section.style.display === "block") {
+    loadConversation();
+    if (chatPollTimer) clearInterval(chatPollTimer);
+    chatPollTimer = setInterval(loadConversation, 4000);
+    document.getElementById("chatForm").addEventListener("submit", sendMessage);
+  } else if (chatPollTimer) {
+    clearInterval(chatPollTimer);
+  }
+}
+
+async function loadConversation() {
+  const user = api.getUser();
+  const box = document.getElementById("chatMessages");
+  try {
+    const msgs = await api.apiFetch(`/chat/conversation?petId=${petId}&withUserId=${currentPet.ownerId}`);
+    box.innerHTML = msgs
+      .map(
+        (m) =>
+          `<div class="msg ${Number(m.senderId) === Number(user.id) ? "me" : "them"}">${escapeHtml(m.message)}</div>`
+      )
+      .join("") || `<p style="color:var(--muted);font-size:13px;text-align:center;">Say hello to get the conversation started!</p>`;
+    box.scrollTop = box.scrollHeight;
+  } catch (err) {
+    box.innerHTML = `<p style="color:var(--muted);font-size:13px;">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+async function sendMessage(e) {
+  e.preventDefault();
+  const input = document.getElementById("chatText");
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  try {
+    await api.apiFetch("/chat/send", {
+      method: "POST",
+      body: { petId: petId, receiverId: currentPet.ownerId, message: text },
+    });
+    loadConversation();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+loadPet();
+</script>
+</body>
+</html>

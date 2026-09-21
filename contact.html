@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Contact Us — petsath.com</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="contact">
+
+<header class="site-header" id="site-header"></header>
+
+<section style="padding-top:40px;">
+  <div class="container" style="max-width:640px;">
+    <div class="section-title">
+      <h2>Contact Us</h2>
+      <p>Questions, feedback, or need help? Send us a message.</p>
+    </div>
+
+    <div class="card">
+      <div id="alertBox"></div>
+      <form id="contactForm">
+        <div class="form-group">
+          <label>Your Name</label>
+          <input type="text" id="cname" required />
+        </div>
+        <div class="form-group">
+          <label>Your Email</label>
+          <input type="email" id="cemail" required />
+        </div>
+        <div class="form-group">
+          <label>Message</label>
+          <textarea id="cmessage" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Send Message</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script>
+document.getElementById("contactForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const alertBox = document.getElementById("alertBox");
+  alertBox.innerHTML = "";
+  const body = {
+    name: document.getElementById("cname").value.trim(),
+    email: document.getElementById("cemail").value.trim(),
+    message: document.getElementById("cmessage").value.trim(),
+  };
+  try {
+    await api.apiFetch("/contact", { method: "POST", body });
+    showAlert(alertBox, "Thanks! Your message has been sent.", "success");
+    document.getElementById("contactForm").reset();
+  } catch (err) {
+    showAlert(alertBox, err.message, "error");
+  }
+});
+</script>
+</body>
+</html>

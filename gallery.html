@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pet Gallery — petsath.com</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="gallery">
+
+<header class="site-header" id="site-header"></header>
+
+<section style="padding-top:40px;">
+  <div class="container">
+    <div class="section-title">
+      <h2>Pet Gallery</h2>
+      <p>Browse every pet currently listed for adoption</p>
+    </div>
+
+    <div class="filters">
+      <input type="text" id="searchInput" placeholder="Search by name, breed..." />
+      <select id="speciesFilter">
+        <option value="">All Species</option>
+        <option value="Dog">Dog</option>
+        <option value="Cat">Cat</option>
+        <option value="Bird">Bird</option>
+        <option value="Rabbit">Rabbit</option>
+        <option value="Other">Other</option>
+      </select>
+      <select id="statusFilter">
+        <option value="">All Status</option>
+        <option value="available">Available</option>
+        <option value="pending">Pending</option>
+        <option value="adopted">Adopted</option>
+      </select>
+      <button class="btn btn-primary" id="applyFilters">Filter</button>
+    </div>
+
+    <div class="pet-grid" id="petGrid">
+      <p class="empty-state">Loading pets...</p>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script>
+async function loadPets() {
+  const grid = document.getElementById("petGrid");
+  grid.innerHTML = `<p class="empty-state">Loading pets...</p>`;
+
+  const species = document.getElementById("speciesFilter").value;
+  const status = document.getElementById("statusFilter").value;
+  const search = document.getElementById("searchInput").value.trim();
+
+  const params = new URLSearchParams();
+  if (species) params.set("species", species);
+  if (status) params.set("status", status);
+  if (search) params.set("search", search);
+
+  try {
+    const pets = await api.apiFetch("/pets?" + params.toString());
+    if (!pets.length) {
+      grid.innerHTML = `<p class="empty-state">No pets match your search.</p>`;
+      return;
+    }
+    grid.innerHTML = pets.map(petCardHtml).join("");
+    grid.querySelectorAll(".like-btn").forEach((btn) => {
+      btn.addEventListener("click", handleLikeClick);
+    });
+  } catch (err) {
+    grid.innerHTML = `<p class="empty-state">Could not load pets: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function petCardHtml(p) {
+  const img = p.images && p.images.length ? api.fileUrl(p.images[0]) : PLACEHOLDER_IMG;
+  return `
+    <div class="pet-card">
+      <a href="pet-details.html?id=${p.id}">
+        <div class="pet-img">
+          <span class="pet-status">${escapeHtml(p.status)}</span>
+          <img src="${img}" alt="${escapeHtml(p.name)}" />
+        </div>
+      </a>
+      <div class="pet-body">
+        <a href="pet-details.html?id=${p.id}" style="color:inherit;"><h3>${escapeHtml(p.name)}</h3></a>
+        <div class="pet-meta">${escapeHtml(p.species)} • ${escapeHtml(p.breed || "Mixed")} • ${escapeHtml(String(p.age || "?"))} yrs</div>
+        <p class="desc">${escapeHtml((p.description || "").slice(0, 80))}${(p.description || "").length > 80 ? "..." : ""}</p>
+        <div class="pet-footer">
+          <button class="like-btn ${p.likedByMe ? "liked" : ""}" data-pet-id="${p.id}">
+            <span>${p.likedByMe ? "❤️" : "🤍"}</span> <span class="like-count">${p.likeCount}</span>
+          </button>
+          <a href="pet-details.html?id=${p.id}" class="btn btn-outline btn-small">View</a>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function handleLikeClick(e) {
+  const btn = e.currentTarget;
+  if (!api.getToken()) {
+    window.location.href = "login.html";
+    return;
+  }
+  const petId = btn.getAttribute("data-pet-id");
+  try {
+    const result = await api.apiFetch("/likes/" + petId, { method: "POST" });
+    const countEl = btn.querySelector(".like-count");
+    let count = parseInt(countEl.textContent, 10);
+    if (result.liked) {
+      count += 1;
+      btn.classList.add("liked");
+      btn.querySelector("span").textContent = "❤️";
+    } else {
+      count -= 1;
+      btn.classList.remove("liked");
+      btn.querySelector("span").textContent = "🤍";
+    }
+    countEl.textContent = count;
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+document.getElementById("applyFilters").addEventListener("click", loadPets);
+document.getElementById("searchInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") loadPets();
+});
+loadPets();
+</script>
+</body>
+</html>

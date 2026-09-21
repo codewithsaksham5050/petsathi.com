@@ -1,0 +1,6 @@
+node_modules/
+.env.local
+backend/uploads/pets/*
+backend/uploads/profiles/*
+!backend/uploads/pets/.gitkeep
+!backend/uploads/profiles/.gitkeep

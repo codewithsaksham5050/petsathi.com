@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>petsath.com — Find Your New Best Friend</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="home">
+
+<header class="site-header" id="site-header"></header>
+
+<section class="hero">
+  <div class="container hero-inner">
+    <div class="hero-text">
+      <h1>Give a pet a loving home 🐶🐱</h1>
+      <p>petsath.com connects people who have pets for adoption with people looking to adopt.
+         Register, list your pet with photos, like the ones you love, and chat directly with the owner.</p>
+      <div class="hero-actions">
+        <a href="gallery.html" class="btn btn-primary">Browse Pets</a>
+        <a href="register.html" class="btn btn-outline">Register Now</a>
+      </div>
+    </div>
+    <div class="hero-img">
+      <img src="https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=600&q=80" alt="Happy dog" />
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="section-title">
+      <h2>How petsath.com works</h2>
+      <p>Three simple steps to a new furry family member</p>
+    </div>
+    <div class="pet-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+      <div class="card text-center">
+        <h3>1. Register</h3>
+        <p style="color:var(--muted);font-size:14px;">Create a free profile as an Adopter or as a Pet Owner giving a pet up for adoption.</p>
+      </div>
+      <div class="card text-center">
+        <h3>2. Browse & Like</h3>
+        <p style="color:var(--muted);font-size:14px;">Explore the gallery, like the pets you're interested in, and view full profiles with photos.</p>
+      </div>
+      <div class="card text-center">
+        <h3>3. Chat & Adopt</h3>
+        <p style="color:var(--muted);font-size:14px;">Message the pet's owner directly, ask questions, and send an adoption request.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="background:#fff;">
+  <div class="container">
+    <div class="section-title">
+      <h2>Recently Added Pets</h2>
+      <p>Meet some of the pets waiting for a home</p>
+    </div>
+    <div class="pet-grid" id="featuredPets">
+      <p class="empty-state">Loading pets...</p>
+    </div>
+    <div class="text-center mt-20">
+      <a href="gallery.html" class="btn btn-primary">See All Pets</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script>
+async function loadFeatured() {
+  const wrap = document.getElementById("featuredPets");
+  try {
+    const pets = await api.apiFetch("/pets");
+    if (!pets.length) {
+      wrap.innerHTML = `<p class="empty-state">No pets listed yet. Be the first to <a href="register.html">register</a> and add one!</p>`;
+      return;
+    }
+    wrap.innerHTML = pets.slice(0, 6).map(petCardHtml).join("");
+  } catch (err) {
+    wrap.innerHTML = `<p class="empty-state">Could not load pets right now.</p>`;
+  }
+}
+
+function petCardHtml(p) {
+  const img = p.images && p.images.length ? api.fileUrl(p.images[0]) : PLACEHOLDER_IMG;
+  return `
+    <a href="pet-details.html?id=${p.id}" class="pet-card" style="text-decoration:none;">
+      <div class="pet-img">
+        <span class="pet-status">${escapeHtml(p.status)}</span>
+        <img src="${img}" alt="${escapeHtml(p.name)}" />
+      </div>
+      <div class="pet-body">
+        <h3>${escapeHtml(p.name)}</h3>
+        <div class="pet-meta">${escapeHtml(p.species)} • ${escapeHtml(p.breed || "Mixed")} • ${escapeHtml(String(p.age || "?"))} yrs</div>
+        <div class="pet-footer">
+          <span>❤️ ${p.likeCount || 0} likes</span>
+        </div>
+      </div>
+    </a>
+  `;
+}
+
+loadFeatured();
+</script>
+</body>
+</html>
